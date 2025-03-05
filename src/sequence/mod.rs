@@ -72,7 +72,7 @@ where
   }
 }
 
-/// a
+/// Parser wrapper for `preceded`
 pub struct Preceded<F, G> {
   f: F,
   g: G,
@@ -129,7 +129,7 @@ where
   }
 }
 
-/// a
+/// Parser wrapper for `terminated` 
 pub struct Terminated<F, G> {
   f: F,
   g: G,
