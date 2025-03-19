@@ -869,8 +869,9 @@ where
 
 /// Creates an iterator from input data and a parser.
 ///
-/// Call the iterator's [ParserIterator::finish] method to get the remaining input if successful,
-/// or the error value if we encountered an error.
+/// Call the iterator's [ParserIterator::finish] method (or [ParserIterator::finish_complete] for
+/// complete parsers) to get the remaining input if successful, or the error value if we encountered
+/// an error.
 ///
 /// On [`Err::Error`], iteration will stop. To instead chain an error up, see [`cut`].
 ///
@@ -901,7 +902,7 @@ where
 }
 
 /// Main structure associated to the [iterator] function.
-pub struct ParserIterator<I, E, F, S = Complete> {
+pub struct ParserIterator<I, E, F, S> {
   iterator: F,
   input: I,
   state: Option<State<E>>,
@@ -911,13 +912,16 @@ pub struct ParserIterator<I, E, F, S = Complete> {
 
 impl<I: Clone, E, F> ParserIterator<I, E, F, Complete> {
   /// Returns the remaining input if parsing was successful, or the error if we encountered an error.
-  pub fn finish(mut self) -> IResult<I, (), E> {
+  /// 
+  /// To be used for Complete parsers
+  pub fn finish_complete(mut self) -> IResult<I, (), E> {
     match self.state.take().unwrap() {
       State::Incomplete(_) | State::Running | State::Done => Ok((self.input, ())),
       State::Failure(e) => Err(Err::Failure(e)),
     }
   }
 }
+
 impl<I: Clone, E, F> ParserIterator<I, E, F, Streaming> {
   /// Returns the remaining input if parsing was successful, or the error if we encountered an error.
   pub fn finish(mut self) -> IResult<I, (), E> {
