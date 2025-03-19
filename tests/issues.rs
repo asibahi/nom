@@ -264,7 +264,7 @@ fn issue_1586_parser_iterator_impl() {
   }
 
   fn parse_input(i: &str) -> impl Iterator<Item = i32> + '_ {
-    iterator(i, parse_line).map(|x| x.parse::<i32>().unwrap())
+    iterator::<_, _, _, nom::Streaming>(i, parse_line).map(|x| x.parse::<i32>().unwrap())
   }
 
   assert_eq!(parse_input("123\n456").collect::<Vec<_>>(), vec![123, 456]);
