@@ -916,6 +916,7 @@ where
 pub fn iterator<Input, Error, F, S>(input: Input, f: F) -> ParserIterator<Input, Error, F, S>
 where
   F: Parser<Input>,
+  S: IsStreaming,
   Error: ParseError<Input>,
 {
   ParserIterator {
@@ -932,7 +933,6 @@ pub struct ParserIterator<I, E, F, S> {
   input: I,
   state: Option<State<E>>,
   _streaming: std::marker::PhantomData<S>
-
 }
 
 impl<I: Clone, E, F> ParserIterator<I, E, F, Complete> {
