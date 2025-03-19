@@ -912,7 +912,7 @@ where
 /// assert_eq!(parsed, [("abc", 3usize), ("defg", 4), ("hijkl", 5), ("mnopqr", 6)].iter().cloned().collect());
 /// assert_eq!(res, Ok(("123", ())));
 /// ```
-pub fn iterator<Input, Error, F>(input: Input, f: F) -> ParserIterator<Input, Error, F>
+pub fn iterator<Input, Error, F, S>(input: Input, f: F) -> ParserIterator<Input, Error, F, S>
 where
   F: Parser<Input>,
   Error: ParseError<Input>,
@@ -921,17 +921,29 @@ where
     iterator: f,
     input,
     state: Some(State::Running),
+    _streaming: PhantomData
   }
 }
 
 /// Main structure associated to the [iterator] function.
-pub struct ParserIterator<I, E, F> {
+pub struct ParserIterator<I, E, F, S = Complete> {
   iterator: F,
   input: I,
   state: Option<State<E>>,
+  _streaming: std::marker::PhantomData<S>
+
 }
 
-impl<I: Clone, E, F> ParserIterator<I, E, F> {
+impl<I: Clone, E, F> ParserIterator<I, E, F, Complete> {
+  /// Returns the remaining input if parsing was successful, or the error if we encountered an error.
+  pub fn finish(mut self) -> IResult<I, (), E> {
+    match self.state.take().unwrap() {
+      State::Incomplete(_) | State::Running | State::Done => Ok((self.input, ())),
+      State::Failure(e) => Err(Err::Failure(e)),
+    }
+  }
+}
+impl<I: Clone, E, F> ParserIterator<I, E, F, Streaming> {
   /// Returns the remaining input if parsing was successful, or the error if we encountered an error.
   pub fn finish(mut self) -> IResult<I, (), E> {
     match self.state.take().unwrap() {
@@ -942,10 +954,11 @@ impl<I: Clone, E, F> ParserIterator<I, E, F> {
   }
 }
 
-impl<Input, Output, Error, F> core::iter::Iterator for ParserIterator<Input, Error, F>
+impl<Input, Output, Error, F, S> core::iter::Iterator for ParserIterator<Input, Error, F, S>
 where
   F: Parser<Input, Output = Output, Error = Error>,
   Input: Clone,
+  S: IsStreaming
 {
   type Item = Output;
 
@@ -953,7 +966,7 @@ where
     if let State::Running = self.state.take().unwrap() {
       let input = self.input.clone();
 
-      match (self.iterator).parse(input) {
+      match (self.iterator).process::<OutputM<Emit, Emit, S>>(input) {
         Ok((i, o)) => {
           self.input = i;
           self.state = Some(State::Running);
