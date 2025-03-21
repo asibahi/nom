@@ -895,7 +895,7 @@ where
   ParserIterator {
     iterator: f,
     input,
-    state: Some(State::Running),
+    state: State::Running,
     _streaming: PhantomData,
   }
 }
@@ -909,7 +909,7 @@ where
   ParserIterator {
     iterator: f,
     input,
-    state: Some(State::Running),
+    state: State::Running,
     _streaming: PhantomData,
   }
 }
@@ -918,14 +918,14 @@ where
 pub struct ParserIterator<I, E, F, S> {
   iterator: F,
   input: I,
-  state: Option<State<E>>,
+  state: State<E>,
   _streaming: std::marker::PhantomData<S>
 }
 
 impl<I: Clone, E, F, S> ParserIterator<I, E, F, S> {
   /// Returns the remaining input if parsing was successful, or the error if we encountered an error.
-  pub fn finish(mut self) -> IResult<I, (), E> {
-    match self.state.take().unwrap() {
+  pub fn finish(self) -> IResult<I, (), E> {
+    match self.state {
       State::Running | State::Done => Ok((self.input, ())),
       State::Failure(e) => Err(Err::Failure(e)),
       State::Incomplete(i) => Err(Err::Incomplete(i)),
@@ -942,25 +942,24 @@ where
   type Item = Output;
 
   fn next(&mut self) -> Option<Self::Item> {
-    if let State::Running = self.state.take().unwrap() {
+    if let State::Running = self.state {
       let input = self.input.clone();
 
       match (self.iterator).process::<OutputM<Emit, Emit, S>>(input) {
         Ok((i, o)) => {
           self.input = i;
-          self.state = Some(State::Running);
           Some(o)
         }
         Err(Err::Error(_)) => {
-          self.state = Some(State::Done);
+          self.state = State::Done;
           None
         }
         Err(Err::Failure(e)) => {
-          self.state = Some(State::Failure(e));
+          self.state = State::Failure(e);
           None
         }
         Err(Err::Incomplete(i)) => {
-          self.state = Some(State::Incomplete(i));
+          self.state = State::Incomplete(i);
           None
         }
       }
