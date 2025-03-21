@@ -901,7 +901,10 @@ where
 }
 
 /// Same as [iterator] but for complete parsers
-pub fn iterator_complete<Input, Error, F>(input: Input, f: F) -> ParserIterator<Input, Error, F, Complete>
+pub fn iterator_complete<Input, Error, F>(
+  input: Input,
+  f: F,
+) -> ParserIterator<Input, Error, F, Complete>
 where
   F: Parser<Input>,
   Error: ParseError<Input>,
@@ -919,7 +922,7 @@ pub struct ParserIterator<I, E, F, S> {
   iterator: F,
   input: I,
   state: State<E>,
-  _streaming: std::marker::PhantomData<S>
+  _streaming: std::marker::PhantomData<S>,
 }
 
 impl<I: Clone, E, F, S> ParserIterator<I, E, F, S> {
